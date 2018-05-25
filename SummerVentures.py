@@ -1,5 +1,6 @@
 from math import cos, sin, pi, sqrt
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 class SimpleVehicle:
@@ -95,7 +96,7 @@ class SimpleArm:
 		plt.pause(dt)
 		plt.show()
 
-class Omni:
+class OmniVehicle:
 	def __init__(self, x, y, L, W, theta, alpha, wheel_radius):
 		self.x = x
 		self.y = y
@@ -162,6 +163,198 @@ class Omni:
 		plt.ion()
 		plt.pause(0.1)
 		plt.show()
+
+class Quadrotor:
+	def __init__(self):
+		self.x = 0
+		self.y = 0
+		self.z = 1
+		self.x_vel = 0
+		self.y_vel = 0
+		self.z_vel = 0
+		self.x_acc = 0
+		self.y_acc = 0
+		self.z_acc = 0
+
+		self.des_x = 0
+		self.des_y = 0
+		self.des_z = 1
+		self.des_x_vel = 0
+		self.des_y_vel = 0
+		self.des_z_vel = 0
+		self.des_x_acc = 0
+		self.des_y_acc = 0
+		self.des_z_acc = 0
+
+		self.roll = 0
+		self.pitch = 0
+		self.yaw = 0
+		self.roll_dot = 0
+		self.pitch_dot = 0
+		self.yaw_dot = 0
+
+		self.des_yaw = 0
+
+		#self.base_size = 0.172
+		self.base_size = 2
+		self.m = 0.18
+		self.g = 9.81
+		self.Ixx = 0.00025
+		self.Iyy = 0.00232
+		self.Izz = 0.0003738
+
+		self.thrust = self.m*9.8
+		self.torque_x = 0
+		self.torque_y = 0
+		self.torque_z = 0
+
+		self.Kp_x = 0.01
+		self.Kp_y = 0.01
+		self.Kp_z = 0.01
+		self.Kp_roll = 0.001
+		self.Kp_pitch = 0.001
+		self.Kp_yaw = 0
+
+		self.dt = 0.1
+
+		fig = plt.figure()
+		self.ax = fig.add_subplot(111, projection='3d')
+
+		self.R = self.rotation_matrix(self.roll, self.pitch, self.yaw)
+
+		self.plot()
+
+	def set_desired_state(self, des_pos, des_vel, des_acc):
+		self.des_x = des_pos[0]
+		self.des_y = des_pos[1]
+		self.des_z = des_pos[2]
+		self.des_x_vel = des_vel[0]
+		self.des_y_vel = des_vel[1]
+		self.des_z_vel = des_vel[2]
+		self.des_x_acc = des_acc[0]
+		self.des_y_acc = des_acc[1]
+		self.des_z_acc = des_acc[2]
+		self.fly()
+
+	def fly(self):
+		self.thrust = self.m*(self.g + self.des_z_acc + self.Kp_z*(self.des_z-self.z))
+		self.des_x_acc += self.Kp_x*(self.des_x-self.x)
+		self.des_y_acc += self.Kp_y*(self.des_y-self.y)
+		self.torque_x = self.Kp_roll*(((self.des_x_acc*sin(self.des_yaw) - self.des_y_acc*cos(self.des_yaw))/self.g) - self.roll)
+		self.torque_y = self.Kp_pitch*(((self.des_x_acc*cos(self.des_yaw) - self.des_y_acc*sin(self.des_yaw))/self.g) - self.pitch)
+		self.torque_z = self.Kp_yaw*(self.des_yaw-self.yaw)
+
+		self.roll = self.roll + self.roll_dot*self.dt
+		self.pitch = self.pitch + self.pitch_dot*self.dt
+		self.yaw = self.yaw + self.yaw_dot*self.dt
+		self.roll_dot = self.roll_dot + (self.torque_x/self.Ixx)*self.dt
+		self.pitch_dot = self.pitch_dot + (self.torque_y/self.Iyy)*self.dt
+		self.yaw_dot = self.yaw_dot + (self.torque_z/self.Izz)*self.dt
+
+		self.R = self.rotation_matrix(self.roll, self.pitch, self.yaw)
+
+		acc = (np.matmul(self.R, np.array([[0], [0], [self.thrust]])) - np.array([[0], [0], [self.m*self.g]]))/self.m
+		self.x_acc = acc[0,0]
+		self.y_acc = acc[1,0]
+		self.z_acc = acc[2,0]
+
+		self.x = self.x + self.x_vel*self.dt
+		self.y = self.y + self.y_vel*self.dt
+		self.z = self.z + self.z_vel*self.dt
+
+		self.x_vel = self.x_vel + self.x_acc*self.dt
+		self.y_vel = self.y_vel + self.y_acc*self.dt
+		self.z_vel = self.z_vel + self.z_acc*self.dt
+
+		self.plot()
+
+	def rotation_matrix(self, roll, pitch, yaw):
+		return np.array([[cos(yaw)*cos(pitch), -sin(yaw)*cos(roll)+cos(yaw)*sin(pitch)*sin(roll), sin(yaw)*sin(roll)+cos(yaw)*sin(pitch)*cos(roll)],
+				 [sin(yaw)*cos(pitch), cos(yaw)*cos(roll)+sin(yaw)*sin(pitch)*sin(roll), -cos(yaw)*sin(roll)+sin(yaw)*sin(pitch)*cos(roll)],
+				 [-sin(pitch), cos(pitch)*sin(roll), cos(pitch)*cos(yaw)]])
+
+	def plot(self):
+		plt.cla()
+
+		rotor1_pos = np.array([[self.x], [self.y], [self.z]]) + np.matmul(self.R, np.array([[0.5*self.base_size], [0], [0]]))
+		rotor2_pos = np.array([[self.x], [self.y], [self.z]]) + np.matmul(self.R, np.array([[-0.5*self.base_size], [0], [0]]))
+		rotor3_pos = np.array([[self.x], [self.y], [self.z]]) + np.matmul(self.R, np.array([[0], [0.5*self.base_size], [0]]))
+		rotor4_pos = np.array([[self.x], [self.y], [self.z]]) + np.matmul(self.R, np.array([[0], [-0.5*self.base_size], [0]]))
+
+		self.ax.plot([rotor1_pos[0,0], rotor2_pos[0,0]], [rotor1_pos[1,0], rotor2_pos[1,0]], [rotor1_pos[2,0], rotor2_pos[2,0]], 'k-')
+		self.ax.plot([rotor3_pos[0,0], rotor4_pos[0,0]], [rotor3_pos[1,0], rotor4_pos[1,0]], [rotor3_pos[2,0], rotor4_pos[2,0]], 'k-')
+		self.ax.plot([rotor1_pos[0,0], rotor2_pos[0,0], rotor3_pos[0,0], rotor4_pos[0,0]],
+			[rotor1_pos[1,0], rotor2_pos[1,0], rotor3_pos[1,0], rotor4_pos[1,0]],
+			[rotor1_pos[2,0], rotor2_pos[2,0], rotor3_pos[2,0], rotor4_pos[2,0]], 'r.')
+
+		plt.xlim(-10, 10)
+		plt.ylim(-10, 10)
+		self.ax.set_zlim(0, 20)
+
+		plt.ion()
+		plt.pause(0.001)
+		plt.show()
+
+class TrajectoryGenerator:
+	def __init__(self, start_pos, des_pos, T, start_vel=[0,0,0], des_vel=[0,0,0], start_acc=[0,0,0], des_acc=[0,0,0]):
+		self.start_x = start_pos[0]
+		self.start_y = start_pos[1]
+		self.start_z = start_pos[2]
+
+		self.des_x = des_pos[0]
+		self.des_y = des_pos[1]
+		self.des_z = des_pos[2]
+
+		self.start_x_vel = start_vel[0]
+		self.start_y_vel = start_vel[1]
+		self.start_z_vel = start_vel[2]
+
+		self.des_x_vel = des_vel[0]
+		self.des_y_vel = des_vel[1]
+		self.des_z_vel = des_vel[2]
+
+		self.start_x_acc = start_acc[0]
+		self.start_y_acc = start_acc[1]
+		self.start_z_acc = start_acc[2]
+
+		self.des_x_acc = des_acc[0]
+		self.des_y_acc = des_acc[1]
+		self.des_z_acc = des_acc[2]
+
+		self.T = T
+
+	def solve(self):
+		A = np.array([[0, 0, 0, 0, 0, 1],
+			[self.T**5, self.T**4, self.T**3, self.T**2, self.T, 1],
+			[0, 0, 0, 0, 1, 0],
+			[5*self.T**4, 4*self.T**3, 3*self.T**2, 2*self.T, 1, 0],
+			[0, 0, 0, 2, 0, 0],
+			[20*self.T**3, 12*self.T**2, 6*self.T, 2, 0, 0]])
+
+		b_x = np.array([[self.start_x],
+			[self.des_x],
+			[self.start_x_vel],
+			[self.des_x_vel],
+			[self.start_x_acc],
+			[self.des_x_acc]])
+
+		b_y = np.array([[self.start_y],
+			[self.des_y],
+			[self.start_y_vel],
+			[self.des_y_vel],
+			[self.start_y_acc],
+			[self.des_y_acc]])
+
+		b_z = np.array([[self.start_z],
+			[self.des_z],
+			[self.start_z_vel],
+			[self.des_z_vel],
+			[self.start_z_acc],
+			[self.des_z_acc]])
+
+		self.x_c = np.linalg.solve(A, b_x)
+		self.y_c = np.linalg.solve(A, b_y)
+		self.z_c = np.linalg.solve(A, b_z)
 
 def ang_diff(theta1, theta2):
 	return (theta1-theta2+pi)%(2*pi)-pi
