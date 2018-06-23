@@ -1,10 +1,11 @@
 from math import cos, sin, pi, sqrt
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 class SimpleVehicle:
-	def __init__(self, x, y, theta, L):
+	def __init__(self, x=0, y=0, theta=0, L=1):
 		self.x = x
 		self.y = y
 		self.theta = theta
@@ -55,18 +56,20 @@ class SimpleVehicle:
 		plt.show()
 
 class SimpleArm:
-	def __init__(self, x, y, L1, L2, theta1, theta2):
+	def __init__(self, x=0, y=0, L1=1, L2=1, theta1=0, theta2=0):
 		self.shoulder = np.array([[x], [y]])
+
 		self.L1 = L1
 		self.L2 = L2
-		self.theta1 = theta1
-		self.theta2 = theta2
-		self.goal = [L1*cos(theta1)+L2*cos(theta1+theta2), L1*sin(theta1), L2*sin(theta1+theta2)]
-		self.update_points()
 
-	def update_joints(self, theta1, theta2):
+		self.goal = [L1*cos(theta1)+L2*cos(theta1+theta2), L1*sin(theta1), L2*sin(theta1+theta2)]
+
+		self.update_joints(theta1, theta2)
+
+	def update_joints(self, theta1, theta2, theta3=0):
 		self.theta1 = theta1
 		self.theta2 = theta2
+		self.theta3 = theta3
 		self.update_points()
 
 	def update_points(self):
@@ -76,29 +79,104 @@ class SimpleArm:
 	def click(self, event):
 		self.goal = [event.xdata, event.ydata]
 
-	def plot(self, dt):
+	def plot(self, dt=0.01):
 		plt.cla()
 
 		fig = plt.figure(1)
 		fig.canvas.mpl_connect('button_press_event', self.click)
 
-		plt.plot(self.shoulder[0], self.shoulder[1], 'ro')
-		plt.plot(self.elbow[0], self.elbow[1], 'ro')
-		plt.plot(self.wrist[0], self.wrist[1], 'ro')
+		plt.plot(self.goal[0], self.goal[1], 'g*')
 
-		plt.plot([self.shoulder[0], self.elbow[0]], [self.shoulder[1], self.elbow[1]], 'k-')
-		plt.plot([self.elbow[0], self.wrist[0]], [self.elbow[1], self.wrist[1]], 'k-')
+		plt.plot([self.shoulder[0], self.elbow[0]], [self.shoulder[1], self.elbow[1]], 'k-', linewidth=10)
+		plt.plot([self.elbow[0], self.wrist[0]], [self.elbow[1], self.wrist[1]], 'k-', linewidth=10)
+
+		plt.plot(self.shoulder[0], self.shoulder[1], 'ro', markersize=20)
+		plt.plot(self.elbow[0], self.elbow[1], 'ro', markersize=20)
+		plt.plot(self.wrist[0], self.wrist[1], 'ro', markersize=20)
 
 		lim = self.L1 + self.L2
-		plt.xlim(-lim, lim)
-		plt.ylim(-lim, lim)
+		plt.xlim(0, lim)
+		plt.ylim(0, lim)
+
+		plt.ion()
+		plt.pause(dt)
+		plt.show()
+
+class Arm3d:
+	def __init__(self, L1=0, L2=1, L3=1, theta1=0, theta2=0, theta3=0):
+		self.shoulder = np.array([[0], [0], [0]])
+
+		self.L1 = L1
+		self.L2 = L2
+		self.L3 = L3
+
+		self.goal = [1,1,1]
+
+		sim_fig = plt.figure(1)
+		self.sim_ax = sim_fig.add_subplot(111, projection='3d')
+		plt.subplots_adjust(left=0.3, bottom=0.3, right=0.7)
+
+		z_ax = plt.axes([0.1, 0.1, 0.8, 0.01])
+		y_ax = plt.axes([0.1, 0.15, 0.8, 0.01])
+		x_ax = plt.axes([0.1, 0.2, 0.8, 0.01])
+
+		self.x_slider = Slider(x_ax, 'x', 0.1, 2.0, valinit=1)
+		self.y_slider = Slider(y_ax, 'y', 0.1, 2.0, valinit=1)
+		self.z_slider = Slider(z_ax, 'z', 0.1, 2.0, valinit=1)
+
+		self.x_slider.on_changed(self.slider_callback)
+		self.y_slider.on_changed(self.slider_callback)
+		self.z_slider.on_changed(self.slider_callback)
+
+		self.update_joints(theta1, theta2, theta3)
+
+	def slider_callback(self, val):
+		self.goal = [self.x_slider.val, self.y_slider.val, self.z_slider.val]
+
+	def update_joints(self, theta1, theta2, theta3):
+		self.theta1 = theta1
+		self.theta2 = theta2
+		self.theta3 = theta3
+
+		self.R = self.rotation_matrix(theta1)
+
+		self.update_points()
+
+	def update_points(self):
+		elbow = self.shoulder + np.array([[self.L2*cos(self.theta2)], [0], [self.L2*sin(self.theta2)]])
+		self.elbow = np.matmul(self.R, elbow)
+		self.wrist = np.matmul(self.R, elbow + np.array([[self.L3*cos(self.theta2+self.theta3)], [0], [self.L3*sin(self.theta2+self.theta3)]]))
+
+		self.plot()
+
+	def rotation_matrix(self, theta1):
+		return np.array([[cos(theta1), -sin(theta1), 0], [sin(theta1), cos(theta1), 0], [0, 0, 1]])
+
+	def plot(self, dt=0.01):
+		plt.axes(self.sim_ax)
+		plt.cla()
+
+		self.sim_ax.plot([self.shoulder[0, 0], self.elbow[0, 0]], [self.shoulder[1, 0], self.elbow[1, 0]], [self.shoulder[2, 0], self.elbow[2, 0]], \
+			'k-', linewidth=10)
+		self.sim_ax.plot([self.elbow[0, 0], self.wrist[0, 0]], [self.elbow[1, 0], self.wrist[1, 0]], [self.elbow[2, 0], self.wrist[2, 0]], \
+			'k-', linewidth=10)
+
+		self.sim_ax.plot([self.shoulder[0, 0], self.elbow[0, 0], self.wrist[0, 0]], \
+			[self.shoulder[1, 0], self.elbow[1, 0], self.wrist[1, 0]], \
+			[self.shoulder[2, 0], self.elbow[2, 0], self.wrist[2, 0]], \
+			'r.', markersize=40)
+
+		lim = self.L2 + self.L3
+		plt.xlim(0, lim)
+		plt.ylim(0, lim)
+		self.sim_ax.set_zlim(0, lim)
 
 		plt.ion()
 		plt.pause(dt)
 		plt.show()
 
 class OmniVehicle:
-	def __init__(self, x, y, L, W, theta, alpha, wheel_radius):
+	def __init__(self, x=0, y=0, L=1, W=0.5, theta=0, alpha=0.5, wheel_radiu=0.25):
 		self.x = x
 		self.y = y
 
