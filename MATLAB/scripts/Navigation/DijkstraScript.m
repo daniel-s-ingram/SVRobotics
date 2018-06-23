@@ -1,9 +1,18 @@
-map = false(50);
-obstacles = rand(50) > 0.6;
+n = 25;
+
+map = false(n);
+obstacles = rand(n) > 0.65;
 map(obstacles) = true;
 
-start_pos = [5, 5];
-goal_pos = [25, 25];
+% load house;
+% [m,n] = size(house);
+
+start_pos = [randi(n), randi(n)];
+goal_pos = [randi(n), randi(n)];
 map(goal_pos) = false;
 
 Dijkstra(map, start_pos, goal_pos);
+ASTAR(map, start_pos, goal_pos);
+
+pause;
+close all;

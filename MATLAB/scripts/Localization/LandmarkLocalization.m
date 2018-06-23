@@ -7,8 +7,8 @@ veh.add_driver(RandomPath(map.dim));
 
 P0 = diag([0.005, 0.005, 0.001].^2);
 W = diag([0.1, 1*pi/180].^2);
-sensor = RangeBearingSensor(veh, map, 'covar', W, 'angle', [-pi/2, pi/2], ...
-    'range', 4, 'animate');
+sensor = RangeBearingSensor(veh, map, 'covar', W, 'angle', [-pi, pi], ...
+    'range', 40, 'animate');
 
 ekf = EKF(veh, V, P0, sensor, W, map);
 ekf.run(1000);
