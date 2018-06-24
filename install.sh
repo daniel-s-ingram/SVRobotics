@@ -39,6 +39,7 @@ wget -O opencv_contrib.zip https://github.com/Itseez/opencv_contrib/archive/3.1.
 unzip opencv_contrib.zip
 mv opencv_contrib-3.1.0 opencv_contrib
 rm opencv_contrib.zip
+mv opencv_contrib opencv
 cd opencv
 mkdir build
 cd build
