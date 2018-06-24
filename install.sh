@@ -44,6 +44,8 @@ mv opencv_contrib opencv
 cd opencv
 mkdir build
 cd build
+echo "find_package(HDF5)" >> modules/python/common.cmake
+echo "include_directories(${HDF5_INCLUDE_DIRS})" >> modules/python/common.cmake
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
     -D CMAKE_INSTALL_PREFIX=/usr/local \
     -D INSTALL_PYTHON_EXAMPLES=ON \
