@@ -18,6 +18,7 @@ sudo apt-get install python-rosinstall python-rosinstall-generator python-wstool
 sudo apt-get install python-catkin-tools
 mkdir -p ~/ros_ws/src
 cd ~/ros_ws
+catkin init
 catkin build
 echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
 source ~/.bashrc
