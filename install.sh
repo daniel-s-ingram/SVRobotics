@@ -9,13 +9,13 @@ sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main
 sudo apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
 sudo apt-get update
 sudo apt-get upgrade
-sudo apt-get install ros-kinetic-desktop-full
+sudo apt-get -y install ros-kinetic-desktop-full
 sudo rosdep init
 rosdep update
 echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
 source ~/.bashrc
-sudo apt-get install python-rosinstall python-rosinstall-generator python-wstool build-essential
-sudo apt-get install python-catkin-tools
+sudo apt-get -y install python-rosinstall python-rosinstall-generator python-wstool build-essential
+sudo apt-get -y install python-catkin-tools
 mkdir -p ~/ros_ws/src
 cd ~/ros_ws
 catkin init
@@ -24,13 +24,13 @@ echo "source ~/ros_ws/devel/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 
 #Install OpenCV
-sudo apt-get install build-essential cmake pkg-config
-sudo apt-get install libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev
-sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
-sudo apt-get install libxvidcore-dev libx264-dev
-sudo apt-get install libgtk-3-dev
-sudo apt-get install libatlas-base-dev gfortran
-sudo apt-get install python2.7-dev python3.5-dev
+sudo apt-get -y install build-essential cmake pkg-config
+sudo apt-get -y install libjpeg8-dev libtiff5-dev libjasper-dev libpng12-dev
+sudo apt-get -y install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
+sudo apt-get -y install libxvidcore-dev libx264-dev
+sudo apt-get -y install libgtk-3-dev
+sudo apt-get -y install libatlas-base-dev gfortran
+sudo apt-get -y install python2.7-dev python3.5-dev
 cd ~
 wget -O opencv.zip https://github.com/Itseez/opencv/archive/3.1.0.zip
 unzip opencv.zip
@@ -56,5 +56,5 @@ sudo ldconfig
 
 #Install misc
 pip install --user "picamera[array]"
-sudo apt-get install arduino
-sudo apt-get install terminator
+sudo apt-get -y install arduino
+sudo apt-get -y install terminator
