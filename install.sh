@@ -56,7 +56,20 @@ make -j4
 sudo make install
 sudo ldconfig
 
+#Use OpenCV-3.1.0 rather than OpenCV-3.3.0-dev from ROS install
+echo "export PYTHONPATH=/usr/local/lib/python2.7/dist-packages/:\${PYTHONPATH}" >> ~/.bashrc
+
 #Install misc
 pip install --user "picamera[array]"
 sudo apt-get -y install arduino
 sudo apt-get -y install terminator
+
+#Fix Firefox
+sudo apt-get purge firefox
+cd /usr/src
+wget ftp://ports.ubuntu.com/ubuntu-ports/pool/main/f/firefox/firefox_52.0.2+build1-0ubuntu0.12.04.1_armhf.deb
+dpkg -i firefox_52.0.2+build1-0ubuntu0.12.04.1_armhf.deb
+sudo apt-mark hold firefox
+
+#Install Chromium
+sudo apt-get install chromium-browser
