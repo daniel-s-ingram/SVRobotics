@@ -1,4 +1,4 @@
-n = 25;
+n = 10;
 
 map = false(n);
 obstacles = rand(n) > 0.65;

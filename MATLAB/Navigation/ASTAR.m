@@ -92,7 +92,7 @@ while true
             end
         end
     end
-    pause;
+    %pause;
 end
 
 %% Construct route from start to dest by following the parent links
