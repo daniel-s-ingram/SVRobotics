@@ -61,6 +61,7 @@ echo "export PYTHONPATH=/usr/local/lib/python2.7/dist-packages/:\${PYTHONPATH}" 
 
 #Install misc
 pip install --user "picamera[array]"
+pip install --user pyqtgraph
 sudo apt-get -y install arduino
 sudo apt-get -y install terminator
 
