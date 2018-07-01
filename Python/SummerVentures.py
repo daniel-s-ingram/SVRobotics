@@ -1,5 +1,6 @@
 from math import cos, sin, pi, sqrt
 import matplotlib.pyplot as plt
+import pyqtgraph as pg
 from matplotlib.widgets import Slider
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -11,8 +12,13 @@ class SimpleVehicle:
 		self.theta = theta
 		self.L = L
 		self.goal = [x, y]
-		self.fig = plt.figure(1)
-		self.fig.canvas.mpl_connect('button_press_event', self.click)
+
+		#self.fig = plt.figure(1)
+		#self.fig.canvas.mpl_connect('button_press_event', self.click)
+		self.gw = pg.GraphicsWindow()
+		self.graph = self.gw.addPlot()
+		self.proxyMouse = pg.SignalProxy(self.graph.scene().sigMouseClicked, rateLimit=360, slot=self.click)
+
 		self.update_points()
 
 	def update_pose(self, x, y, theta):
@@ -32,28 +38,46 @@ class SimpleVehicle:
 		return np.array([[cos(theta), -sin(theta)], [sin(theta), cos(theta)]])
 
 	def click(self, event):
-		self.goal = [event.xdata, event.ydata]
+		pos = self.graph.vb.mapSceneToView(event[0].scenePos())
+		self.goal = [pos.x(), pos.y()]
 
-	def plot(self, dt=0.1, plot_goal=False, goal_pos=[10,10], plot_obstacle=False, obstacle_pos=[0,0], obstacle_size=0, xlims=[-50,50], ylims=[-50,50]):
+	def plot(self, goal=[], obstacles=[], xlims=[-50,50], ylims=[-50,50]):
+		self.graph.plot([self.front[0,0], self.back_left[0,0]], [self.front[1,0], self.back_left[1,0]], clear=True)
+		self.graph.plot([self.back_left[0,0], self.back_right[0,0]], [self.back_left[1,0], self.back_right[1,0]])
+		self.graph.plot([self.back_right[0,0], self.front[0,0]], [self.back_right[1,0], self.front[1,0]])
+
+		if goal == []:
+			self.graph.plot([self.goal[0]], [self.goal[1]], pen=None, symbol='x')
+		else:
+			self.graph.plot([goal[0]], [goal[1]], pen=None, symbol='x')
+
+		for obstacle in obstacles:
+			self.graph.plot([obstacle[0]], [obstacle[1]], pen=None, symbol='o', symbolSize=obstacle[2])
+		
+		self.graph.setXRange(xlims[0], xlims[1], padding=0)
+		self.graph.setYRange(ylims[0], ylims[1], padding=0)
+		
+		pg.QtGui.QApplication.processEvents()
+
 		#plt.cla()
 
-		if plot_obstacle:
-			obstacle = plt.Circle((obstacle_pos[0], obstacle_pos[1]), radius=0.5*obstacle_size, fc='r')
-			plt.gca().add_patch(obstacle)
+		#if plot_obstacle:
+		#	obstacle = plt.Circle((obstacle_pos[0], obstacle_pos[1]), radius=0.5*obstacle_size, fc='r')
+		#	plt.gca().add_patch(obstacle)
 
-		if plot_goal:
-			plt.plot(goal_pos[0], goal_pos[1], 'g.')
+		#if plot_goal:
+		#	plt.plot(goal_pos[0], goal_pos[1], 'g.')
 
-		plt.plot([self.front[0], self.back_left[0]], [self.front[1], self.back_left[1]], 'k-', \
-		         [self.back_left[0], self.back_right[0]], [self.back_left[1], self.back_right[1]], 'r-', \
-		         [self.back_right[0], self.front[0]], [self.back_right[1], self.front[1]], 'k-')
+		#plt.plot([self.front[0], self.back_left[0]], [self.front[1], self.back_left[1]], 'k-', \
+		#         [self.back_left[0], self.back_right[0]], [self.back_left[1], self.back_right[1]], 'r-', \
+		#         [self.back_right[0], self.front[0]], [self.back_right[1], self.front[1]], 'k-')
 
-		plt.xlim(xlims)
-		plt.ylim(ylims)
+		#plt.xlim(xlims)
+		#plt.ylim(ylims)
 
-		plt.ion()
-		plt.pause(dt)
-		plt.show()
+		#plt.ion()
+		#plt.pause(dt)
+		#plt.show()
 
 class SimpleArm:
 	def __init__(self, x=0, y=0, L1=1, L2=1, theta1=0, theta2=0):
@@ -61,8 +85,15 @@ class SimpleArm:
 
 		self.L1 = L1
 		self.L2 = L2
+		self.lim = self.L1 + self.L2
 
 		self.goal = [L1*cos(theta1)+L2*cos(theta1+theta2), L1*sin(theta1), L2*sin(theta1+theta2)]
+
+		#fig = plt.figure(1)
+		#fig.canvas.mpl_connect('button_press_event', self.click)
+		self.gw = pg.GraphicsWindow()
+		self.graph = self.gw.addPlot()
+		self.proxyMouse = pg.SignalProxy(self.graph.scene().sigMouseClicked, slot=self.click)
 
 		self.update_joints(theta1, theta2)
 
@@ -77,30 +108,42 @@ class SimpleArm:
 		self.wrist = self.elbow + np.array([[self.L2*cos(self.theta1+self.theta2)], [self.L2*sin(self.theta1+self.theta2)]])
 
 	def click(self, event):
-		self.goal = [event.xdata, event.ydata]
+		pos = self.graph.vb.mapSceneToView(event[0].scenePos())
+		self.goal = [pos.x(), pos.y()]
 
 	def plot(self, dt=0.01):
-		plt.cla()
+		self.graph.plot([self.shoulder[0,0], self.elbow[0,0]], [self.shoulder[1,0], self.elbow[1,0]], clear=True)
+		self.graph.plot([self.elbow[0,0], self.wrist[0,0]], [self.elbow[1,0], self.wrist[1,0]])
 
-		fig = plt.figure(1)
-		fig.canvas.mpl_connect('button_press_event', self.click)
+		self.graph.plot([self.shoulder[0,0]], [self.shoulder[1,0]], pen=None, symbol='o')
+		self.graph.plot([self.elbow[0,0]], [self.elbow[1,0]], pen=None, symbol='o')
+		self.graph.plot([self.wrist[0,0]], [self.wrist[1,0]], pen=None, symbol='o')
 
-		plt.plot(self.goal[0], self.goal[1], 'g*')
+		self.graph.plot([self.goal[0]], [self.goal[1]], pen=None, symbol='x')
 
-		plt.plot([self.shoulder[0], self.elbow[0]], [self.shoulder[1], self.elbow[1]], 'k-', linewidth=10)
-		plt.plot([self.elbow[0], self.wrist[0]], [self.elbow[1], self.wrist[1]], 'k-', linewidth=10)
+		self.graph.setXRange(0, self.lim, padding=0)
+		self.graph.setYRange(0, self.lim, padding=0)
 
-		plt.plot(self.shoulder[0], self.shoulder[1], 'ro', markersize=20)
-		plt.plot(self.elbow[0], self.elbow[1], 'ro', markersize=20)
-		plt.plot(self.wrist[0], self.wrist[1], 'ro', markersize=20)
+		pg.QtGui.QApplication.processEvents()
 
-		lim = self.L1 + self.L2
-		plt.xlim(0, lim)
-		plt.ylim(0, lim)
+		#plt.cla()
 
-		plt.ion()
-		plt.pause(dt)
-		plt.show()
+		#plt.plot(self.goal[0], self.goal[1], 'g*')
+
+		#plt.plot([self.shoulder[0], self.elbow[0]], [self.shoulder[1], self.elbow[1]], 'k-', linewidth=10)
+		#plt.plot([self.elbow[0], self.wrist[0]], [self.elbow[1], self.wrist[1]], 'k-', linewidth=10)
+
+		#plt.plot(self.shoulder[0], self.shoulder[1], 'ro', markersize=20)
+		#plt.plot(self.elbow[0], self.elbow[1], 'ro', markersize=20)
+		#plt.plot(self.wrist[0], self.wrist[1], 'ro', markersize=20)
+
+		#lim = self.L1 + self.L2
+		#plt.xlim(0, lim)
+		#plt.ylim(0, lim)
+
+		#plt.ion()
+		#plt.pause(dt)
+		#plt.show()
 
 class Arm3d:
 	def __init__(self, L1=0, L2=1, L3=1, theta1=0, theta2=0, theta3=0):
